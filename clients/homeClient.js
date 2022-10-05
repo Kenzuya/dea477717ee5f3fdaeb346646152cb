@@ -84,7 +84,7 @@ socket.on("home_get_download_link", async (data) => {
 		console.log("Triggered home_get_download_link");
 		// console.log(data);
 		// const results = await acefile(data.link_download[2]['1080p'].Googledrive);
-		const results = await acefile(data.link_download[0]["480p"].Googledrive);
+		const results = await acefile(data.link_download[2]["1080p"].Googledrive);
 		const response = { ...data, acefile: results };
 		// console.log(response);
 		if (data.mode === "user") {
