@@ -11,10 +11,11 @@ const db = {
 	password: "dika2005",
 	token: "d12be4aa0cadcad2d1c5b168914509800e35a501"
 };
-
+const path = require("path");
 const app = express();
 app.use(cors());
 app.use(responseTime());
+app.use(express.static("./public"));
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
 	cors: {
@@ -96,6 +97,41 @@ app.post("/api/verify", (req, res) => {
 	const { token } = req.query;
 	if (token !== db.token) return res.json({ statusCode: 401, isVerified: false });
 	else if (token === db.token) return res.json({ statusCode: 200, isVerified: true });
+});
+
+app.get("/", (req, res) => {
+	const options = {
+		root: path.join(__dirname, "public"),
+		dotfiles: "deny",
+		headers: {
+			"x-timestamp": Date.now(),
+			"x-sent": true
+		}
+	};
+	res.sendFile("index.html", options);
+});
+app.get("/admin", (req, res) => {
+	const options = {
+		root: path.join(__dirname, "public"),
+		dotfiles: "deny",
+		headers: {
+			"x-timestamp": Date.now(),
+			"x-sent": true
+		}
+	};
+	res.sendFile("index.html", options);
+});
+
+app.get("/login", (req, res) => {
+	const options = {
+		root: path.join(__dirname, "public"),
+		dotfiles: "deny",
+		headers: {
+			"x-timestamp": Date.now(),
+			"x-sent": true
+		}
+	};
+	res.sendFile("index.html", options);
 });
 const clientStatus = {
 	home_client_is_connected: false,
