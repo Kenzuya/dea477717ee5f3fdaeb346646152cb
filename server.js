@@ -6,7 +6,12 @@ const cors = require("cors");
 const DriveraysSearch = require("./driverays/SearchPage");
 const DriveraysMetadata = require("./driverays/Metadata");
 const responseTime = require("response-time");
-const db = require("./database/database.json");
+const db = {
+	username: "setsu",
+	password: "dika2005",
+	token: "d12be4aa0cadcad2d1c5b168914509800e35a501"
+};
+
 const app = express();
 app.use(cors());
 app.use(responseTime());
