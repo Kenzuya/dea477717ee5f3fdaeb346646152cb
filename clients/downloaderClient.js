@@ -6,7 +6,7 @@ const progress = require("progress-stream");
 const EasyDL = require("easydl");
 const fs = require("fs");
 const { getDriveDirectLink, getDriveDirectLinkV2, USER_COOKIE } = require("../acefile/downloader");
-const { uploadFiles, generatePublicURL, listFiles } = require("../drive-api/index");
+const { uploadFiles, generatePublicURL, listFiles } = require("../drive-api/build");
 const downloadLink = "https://drive.google.com/uc?export=download&id=";
 if (!fs.existsSync("./downloads")) fs.mkdirSync("./downloads");
 const socket = io(SERVER_URL, {
