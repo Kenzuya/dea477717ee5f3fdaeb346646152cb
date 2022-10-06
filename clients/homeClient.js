@@ -120,7 +120,7 @@ socket.on("home_download_film", async (data) => {
 					const progressCopy = `Copying files, ${formatAsPercent(progress.percentage)} completed`;
 					console.log(progressCopy);
 					// ws.send(progressCopy);
-					socket.emit("progress", { id: "copy", message: progressCopy });
+					socket.emit("progress", { id: "copy", message: progressCopy, type: "success" });
 				});
 
 				function copyFile(source, target, cb) {
