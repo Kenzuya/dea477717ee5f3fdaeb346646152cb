@@ -6,7 +6,7 @@ const progress = require("progress-stream");
 const EasyDL = require("easydl");
 const fs = require("fs");
 const { getDriveDirectLink, getDriveDirectLinkV2, USER_COOKIE } = require("../acefile/downloader");
-const { uploadFiles, generatePublicURL, listFiles } = require("../drive-api/build");
+const { uploadFiles, generatePublicURL, listFiles, downloadFiles } = require("../drive-api/build");
 const downloadLink = "https://drive.google.com/uc?export=download&id=";
 if (!fs.existsSync("./downloads")) fs.mkdirSync("./downloads");
 const socket = io(SERVER_URL, {
@@ -136,8 +136,35 @@ Size: ${bytesToSize(map.get("fileSize"))}`;
 				socket.emit("notifications", { level: "error", message: "Terjadi error ketika mendownload, mencoba lagi..." });
 				DownloadFilm(data.acefile.direct_link);
 			} else {
-				socket.emit("notifications", { level: "error", message: "Terjadi error ketika mendownload, download dibatalkan!" });
+				try {
+					socket.emit("notifications", { level: "error", message: "Terjadi error ketika mendownload, mencoba lagi..." });
+					await DownloadFilmv2();
+				} catch (err) {
+					console.log(err);
+					console.log("Ada error di Download v2");
+					socket.emit("notifications", { level: "error", message: "Terjadi error ketika mendownload, download dibatalkan!" });
+				}
 			}
+		}
+		async function DownloadFilmv2(link) {
+			console.log("Downloading film v2");
+			const isDownloaded = await downloadFiles(data.acefile.id, fileDirectory.split(".")[0], (progress) => {
+				const message = `
+Mengunduh Film di Downloader... 
+Percentage: ${formatAsPercent(progress.percentage)}
+Speed: ${bytesToSize(progress.speed)}
+Size: ${bytesToSize(progress.length)}
+			`;
+
+				socket.emit("progress", { id: "download", type: "success", message });
+			});
+			console.log("Uploading files...");
+			const results = await uploadFiles(fileDirectory, `${data.title} (${data.year}) ${data.quality}`, HandleProgress);
+			console.log("Generating Public URL...");
+			const exported = await generatePublicURL(results.id);
+			const metadata = { ...results, ...exported };
+			console.log("Emitting home_download...");
+			socket.emit("home_download", metadata);
 		}
 	}
 	// await dl.wait();
