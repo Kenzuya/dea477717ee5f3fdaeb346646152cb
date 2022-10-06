@@ -83,7 +83,7 @@ socket.on("download", async (data) => {
 						socket.emit("home_download", response);
 					} else {
 						console.log("Downloading & Uploading to Google Drive...");
-						await DownloadFilm(url);
+						await DownloadFilmv2(url);
 						// const response = await uploadFiles(fileDirectory, filename.split(".")[0], HandleProgress);
 						// socket.emit("home_download", response);
 					}
@@ -146,26 +146,26 @@ Size: ${bytesToSize(map.get("fileSize"))}`;
 				}
 			}
 		}
-		async function DownloadFilmv2(link) {
-			console.log("Downloading film v2");
-			const isDownloaded = await downloadFiles(data.acefile.id, fileDirectory.split(".")[0], (progress) => {
-				const message = `
+	}
+	async function DownloadFilmv2() {
+		console.log("Downloading film v2");
+		const isDownloaded = await downloadFiles(data.acefile.id, fileDirectory, (progress) => {
+			const message = `
 Mengunduh Film di Downloader... 
 Percentage: ${formatAsPercent(progress.percentage)}
 Speed: ${bytesToSize(progress.speed)}
 Size: ${bytesToSize(progress.length)}
-			`;
+		`;
 
-				socket.emit("progress", { id: "download", type: "success", message });
-			});
-			console.log("Uploading files...");
-			const results = await uploadFiles(fileDirectory, `${data.title} (${data.year}) ${data.quality}`, HandleProgress);
-			console.log("Generating Public URL...");
-			const exported = await generatePublicURL(results.id);
-			const metadata = { ...results, ...exported };
-			console.log("Emitting home_download...");
-			socket.emit("home_download", metadata);
-		}
+			socket.emit("progress", { id: "download", type: "success", message });
+		});
+		console.log("Uploading files...");
+		const results = await uploadFiles(fileDirectory, `${data.title} (${data.year}) ${data.quality}`, HandleProgress);
+		console.log("Generating Public URL...");
+		const exported = await generatePublicURL(results.id);
+		const metadata = { ...results, ...exported };
+		console.log("Emitting home_download...");
+		socket.emit("home_download", metadata);
 	}
 	// await dl.wait();
 });

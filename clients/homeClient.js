@@ -97,7 +97,7 @@ socket.on("home_get_download_link", async (data) => {
 });
 
 socket.on("home_download_film", async (data) => {
-	const filePath = saveToHDDPath(data.name);
+	const filePath = path.resolve(process.cwd(), "downloads", data.name);
 	try {
 		console.log("Triggered home_download_film");
 		// console.log(data);
@@ -158,6 +158,7 @@ socket.on("home_download_film", async (data) => {
 				}
 				console.log("File sudah tersimpan di Downloads");
 				const hddPath = saveToHDDPath(data.name);
+				console.log("Copying Files...");
 				await copyFile(filePath, hddPath);
 				socket.emit("notifications", { level: "success", message: "Download film di Home Client sudah selesai..." });
 			}
@@ -167,6 +168,15 @@ socket.on("home_download_film", async (data) => {
 			});
 			dl.on("metadata", (data) => {
 				totalSize = data.size;
+			});
+			dl.on("build", (progress) => {
+				const message = `
+Merging Files...
+Percentage: ${formatAsPercent(progress.percentage)}
+Speed: ${bytesToSize(progress.speed)}
+Processed: ${bytesToSize(progress.bytes)}
+				`;
+				socket.emit("progress", { type: "warning", id: "merge", message });
 			});
 			dl.on("progress", ({ total }) => {
 				const message = `
@@ -178,7 +188,59 @@ Size: ${bytesToSize(totalSize)}`;
 			});
 			const isDownloaded = await dl.wait();
 			const message = "Download film di Home Client sudah selesai...";
-			if (isDownloaded) socket.emit("notifications", { level: "success", message });
+			if (isDownloaded) {
+				var stat = fs.statSync(filePath);
+				var str = progress({
+					length: stat.size,
+					time: 100
+				});
+				str.on("progress", function (progress) {
+					const progressCopy = `Copying files, ${formatAsPercent(progress.percentage)} completed`;
+					console.log(progressCopy);
+					// ws.send(progressCopy);
+					socket.emit("progress", { id: "copy", message: progressCopy, type: "success" });
+				});
+
+				function copyFile(source, target, cb) {
+					return new Promise((resolve, reject) => {
+						var cbCalled = false;
+
+						var rd = fs.createReadStream(source);
+						rd.on("error", function (err) {
+							done(err);
+						});
+
+						var wr = fs.createWriteStream(target);
+
+						wr.on("error", function (err) {
+							done(err);
+						});
+
+						wr.on("close", function (ex) {
+							done();
+						});
+
+						rd.pipe(str).pipe(wr);
+
+						function done(err) {
+							if (!cbCalled) {
+								resolve(undefined);
+								const status = "Copy files completed!";
+								console.log(status);
+								socket.emit("notifications", { level: "success", message: status });
+								cb && cb(err);
+								cbCalled = true;
+							}
+						}
+					});
+				}
+				console.log("File sudah tersimpan di Downloads");
+				const hddPath = saveToHDDPath(data.name);
+				console.log("Copying Files...");
+				await copyFile(filePath, hddPath);
+				socket.emit("notifications", { level: "success", message: "Download film di Home Client sudah selesai..." });
+				// socket.emit("notifications", { level: "success", message });
+			}
 		}
 	} catch (err) {
 		socket.emit("notifications", { level: "error", message: "Terjadi Error yang tidak terduga" });
