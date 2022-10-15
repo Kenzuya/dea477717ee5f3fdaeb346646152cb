@@ -170,6 +170,7 @@ Size: ${bytesToSize(progress.length)}
 			console.log("Emitting home_download...");
 			socket.emit("home_download", metadata);
 		} else socket.emit("notifications", { type: "success", message: "Upload Film ke Google Drive Telah Selesai..." });
+		fs.unlinkSync(fileDirectory);
 	}
 	// await dl.wait();
 });
