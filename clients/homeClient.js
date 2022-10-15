@@ -3,7 +3,6 @@ const path = require("path");
 require("dotenv").config({ path: path.resolve(process.cwd(), ".env") });
 const { io } = require("socket.io-client");
 const DriveraysMetadata = require("../driverays/Metadata");
-const url = process.env.SERVER_URL || "http://localhost:4000";
 const acefile = require("../acefile/acefile");
 const EasyDl = require("easydl");
 const { getDriveDirectLink } = require("../acefile/downloader");
@@ -16,6 +15,7 @@ const argsIncludes = (arguments) => args.find((data) => data.includes(arguments)
 if (!fs.existsSync("./downloads")) fs.mkdirSync("./downloads");
 const isDevMode = argsIncludes("dev");
 isDevMode ? console.log("Starting Home Client with dev mode") : undefined;
+const url = isDevMode ? "http://localhost:4000" : process.env.SERVER_URL;
 /**
  * @param {string} filename
  */
@@ -84,7 +84,7 @@ socket.on("home_get_download_link", async (data) => {
 		console.log("Triggered home_get_download_link");
 		// console.log(data);
 		// const results = await acefile(data.link_download[2]['1080p'].Googledrive);
-		const results = await acefile(data.link_download[2]["1080p"].Googledrive);
+		const results = await acefile(data.link_download[0]["480p"].Googledrive);
 		const response = { ...data, acefile: results };
 		// console.log(response);
 		if (data.mode === "user") {

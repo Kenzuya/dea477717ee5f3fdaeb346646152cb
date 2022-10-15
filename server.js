@@ -16,6 +16,10 @@ const app = express();
 app.use(cors());
 app.use(responseTime());
 app.use(express.static("./public"));
+const clientStatus = {
+	home_client_is_connected: false,
+	downloader_client_is_connected: false
+};
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
 	cors: {
@@ -133,10 +137,6 @@ app.get("/login", (req, res) => {
 	};
 	res.sendFile("index.html", options);
 });
-const clientStatus = {
-	home_client_is_connected: false,
-	downloader_client_is_connected: false
-};
 
 const clientId = {
 	home_client_id: null,
@@ -147,6 +147,9 @@ io.on("connection", (socket) => {
 	// console.log(io.sockets.adapter.rooms);
 	// socket.emit('home_get_links', 'https://167.86.71.48/mulan-2020/');
 	// socket.emit('home_get_links', 'https://167.86.71.48/downfall-the-case-against-boeing-2022/');
+	socket.on("message", (data) => {
+		console.log("Received data:", data);
+	});
 	socket.on("test", (message) => {
 		console.log("Someone pinging me...");
 		socket.emit("ping", "Hallo ngab");
@@ -174,25 +177,30 @@ io.on("connection", (socket) => {
 	socket.on("get_client_status", () => {
 		socket.emit("client_status", clientStatus);
 	});
+	socket.on("redirect", (data) => socket.broadcast.emit("redirect", data));
 	socket.on("get_metadata", async (data) => {
 		console.log("Emitted get_metadata");
 		let results = {};
 		if (data.mode === "user") {
 			results.mode = "user";
 			console.log("Terminated");
+			// socket.send(new ArrayBuffer)
 			socket.emit("notifications", { level: "warning", message: "Maaf Untuk saat ini website belum dibuka secara public..." });
 		} else if (data.mode === "admin") {
 			// socket.emit("notifications", { level: "success", message: "Sedang Mengunduh film ...\nPresentase: 56%" });
-			if (!clientStatus.home_client_is_connected) socket.emit("notifications", { level: "error", message: "Home client saat ini sedang tidak terhubung ke server" });
-			else if (!clientStatus.downloader_client_is_connected) socket.emit("notifications", { level: "error", message: "Downloader client saat ini sedang tidak terhubung ke server" });
-			else if (!clientStatus.home_client_is_connected && !clientStatus.downloader_client_is_connected)
-				socket.emit("notifications", { level: "error", message: "Client sedang tidak terhubung ke server" });
-			else {
-				results = await DriveraysMetadata(data.link);
-				if (results.duration.includes("/Eps")) return socket.emit("notifications", { level: "error", message: "Untuk Series saat ini belum support..." });
-				results.mode = "admin";
-				socket.broadcast.emit("home_get_download_link", results);
-			}
+			// if (!clientStatus.downloader_client_is_connected) socket.emit("notifications", { level: "error", message: "Downloader client saat ini sedang tidak terhubung ke server" });
+			// else if (!clientStatus.home_client_is_connected && !clientStatus.downloader_client_is_connected)
+			// 	socket.emit("notifications", { level: "error", message: "Client sedang tidak terhubung ke server" });
+			if (!clientStatus.home_client_is_connected && !clientStatus.downloader_client_is_connected)
+				return socket.emit("notifications", { level: "error", message: "Kedua Client sedang tidak terhubung ke server" });
+			if (!clientStatus.home_client_is_connected) return socket.emit("notifications", { level: "error", message: "Home client saat ini sedang tidak terhubung ke server" });
+			if (!clientStatus.downloader_client_is_connected) return socket.emit("notifications", { level: "error", message: "Downloader client saat ini sedang tidak terhubung ke server" });
+
+			results = await DriveraysMetadata(data.link);
+			if (results.duration.includes("/Eps")) return socket.emit("notifications", { level: "error", message: "Untuk Series saat ini belum support..." });
+			results.mode = "admin";
+			results.downloadMode = data.downloadMode;
+			socket.broadcast.emit("home_get_download_link", results);
 		}
 	});
 	socket.on("get_download_link", (data) => {
@@ -227,7 +235,7 @@ io.on("connection", (socket) => {
 	});
 	socket.on("notifications", (data) => socket.broadcast.emit("notifications", data));
 	socket.on("progress", (data) => {
-		console.log("emitted progress event");
+		// console.log("emitted progress event");
 		socket.broadcast.emit("progress", data);
 	});
 });

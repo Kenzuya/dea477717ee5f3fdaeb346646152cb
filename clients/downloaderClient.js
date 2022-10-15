@@ -1,13 +1,15 @@
 const path = require("path");
 require("dotenv").config({ path: path.resolve(process.cwd(), ".env") });
 const { io } = require("socket.io-client");
-const SERVER_URL = process.env.SERVER_URL || "http://localhost:4000";
 const progress = require("progress-stream");
 const EasyDL = require("easydl");
 const fs = require("fs");
 const { getDriveDirectLink, getDriveDirectLinkV2, USER_COOKIE } = require("../acefile/downloader");
 const { uploadFiles, generatePublicURL, listFiles, downloadFiles } = require("../drive-api/build");
+const args = process.argv.slice(2);
 const downloadLink = "https://drive.google.com/uc?export=download&id=";
+const argsIncludes = (arguments) => args.find((data) => data.includes(arguments));
+const SERVER_URL = argsIncludes("dev") ? "http://localhost:4000" : process.env.SERVER_URL;
 if (!fs.existsSync("./downloads")) fs.mkdirSync("./downloads");
 const socket = io(SERVER_URL, {
 	path: "/ws"
@@ -164,8 +166,10 @@ Size: ${bytesToSize(progress.length)}
 		console.log("Generating Public URL...");
 		const exported = await generatePublicURL(results.id);
 		const metadata = { ...results, ...exported };
-		console.log("Emitting home_download...");
-		socket.emit("home_download", metadata);
+		if (data.downloadMode === "upload&download") {
+			console.log("Emitting home_download...");
+			socket.emit("home_download", metadata);
+		} else socket.emit("notifications", { type: "success", message: "Upload Film ke Google Drive Telah Selesai..." });
 	}
 	// await dl.wait();
 });
